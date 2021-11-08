@@ -9,4 +9,4 @@
 ```
 When prompted for ansible-vault password it was provided in the email.
 
-Sorry don't think I accomplished the the parts with the firewall and the publisher script. The publisher is added but I think it won't work since the docket container is not on the same internal network as RabbitMQ. 
+Sorry don't think I accomplished the the parts with the firewall and the publisher script. The publisher is added but I think it won't work since the docket container is not on the same internal network as RabbitMQ. Probably these were the hardest thinks for me, some gap in networking knowledge.
