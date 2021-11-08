@@ -24,24 +24,24 @@
   file:
     path: /root/publisher
     state: directory
-    owner: azureuser
-    group: azureuser
+    owner: admin
+    group: admin
     mode: '0755'
 
 - name: Copy Dockerfile
   copy:
     src: ./app/publisher/Dockerfile
     dest: /root/publisher/Dockerfile
-    owner: azureuser
-    group: azureuser
+    owner: admin
+    group: admin
     mode: '0644'
 
 - name: Copy code
   copy:
     src: ./app/publisher/publisher.go
     dest: /root/publisher/publisher.go
-    owner: azureuser
-    group: azureuser
+    owner: admin
+    group: admin
     mode: '0644'
 
 - name: Build container image
