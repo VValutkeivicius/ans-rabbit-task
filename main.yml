@@ -1,0 +1,8 @@
+---
+- name: install
+  hosts: servers
+
+  roles:
+    - base
+    - rabbitmq
+    - publisher

@@ -1,0 +1,100 @@
+---
+
+- name: Install nessesary package
+  apt: 
+      name: apt-transport-https
+      state: present
+      update_cache: yes
+
+- name: RabbitMQ's main signing key
+  shell: curl -1sLf "https://keys.openpgp.org/vks/v1/by-fingerprint/0A9AF2115F4687BD29803A206B73A36E6026DFCA" | sudo gpg --dearmor | sudo tee /usr/share/keyrings/com.rabbitmq.team.gpg > /dev/null
+
+- name: Launchpad PPA that provides modern Erlang releases
+  shell: curl -1sLf https://dl.cloudsmith.io/public/rabbitmq/rabbitmq-erlang/gpg.E495BB49CC4BBE5B.key | sudo gpg --dearmor | sudo tee /usr/share/keyrings/io.cloudsmith.rabbitmq.E495BB49CC4BBE5B.gpg > /dev/null
+
+- name: PackageCloud RabbitMQ repository
+  shell: curl -1sLf "https://packagecloud.io/rabbitmq/rabbitmq-server/gpgkey" | sudo gpg --dearmor | sudo tee /usr/share/keyrings/io.packagecloud.rabbitmq.gpg > /dev/null
+
+- name: Add Erlang 1
+  shell: | 
+    tee /etc/apt/sources.list.d/rabbitmq.list <<EOF
+    ## Provides modern Erlang/OTP releases
+    ##
+    ## "bionic" as distribution name should work for any reasonably recent Ubuntu or Debian release.
+    ## See the release to distribution mapping table in RabbitMQ doc guides to learn more.
+    deb [signed-by=/usr/share/keyrings/net.launchpad.ppa.rabbitmq.erlang.gpg] http://ppa.launchpad.net/rabbitmq/rabbitmq-erlang/ubuntu bionic main
+    deb-src [signed-by=/usr/share/keyrings/net.launchpad.ppa.rabbitmq.erlang.gpg] http://ppa.launchpad.net/rabbitmq/rabbitmq-erlang/ubuntu bionic main
+    
+    ## Provides RabbitMQ
+    ##
+    ## "bionic" as distribution name should work for any reasonably recent Ubuntu or Debian release.
+    ## See the release to distribution mapping table in RabbitMQ doc guides to learn more.
+    deb [signed-by=/usr/share/keyrings/io.packagecloud.rabbitmq.gpg] https://packagecloud.io/rabbitmq/rabbitmq-server/ubuntu/ bionic main
+    deb-src [signed-by=/usr/share/keyrings/io.packagecloud.rabbitmq.gpg] https://packagecloud.io/rabbitmq/rabbitmq-server/ubuntu/ bionic main
+    EOF
+
+- name: Install Erlang
+  apt: 
+    name: "{{ item }}"
+    state: present
+    update_cache: yes
+  with_items:
+    - erlang-base
+    - erlang-asn1
+    - erlang-crypto
+    - erlang-eldap
+    - erlang-ftp
+    - erlang-inets
+    - erlang-mnesia
+    - erlang-os-mon
+    - erlang-parsetools
+    - erlang-public-key
+    - erlang-runtime-tools
+    - erlang-snmp
+    - erlang-ssl
+    - erlang-syntax-tools
+    - erlang-tftp
+    - erlang-tools
+    - erlang-xmerl
+
+- name: Fix unmet dependencies
+  shell: apt-get -f install
+
+- name: Install rabbitmq
+  apt: 
+    name: rabbitmq-server
+    state: present
+    update_cache: yes
+
+- name: Enable rabbitmq plugins
+  rabbitmq_plugin:
+    names: rabbitmq_management
+    state: enabled
+  notify:
+    - restart rabbitmq
+
+- name: Add rabbitmq users admin
+  rabbitmq_user:
+    user: "{{ name }}"
+    password: "{{ password }}"
+    vhost: /
+    tags: administrator
+    configure_priv: .*
+    read_priv: .*
+    write_priv: .*
+    state: present
+  
+- name: Remove default guest user
+  rabbitmq_user: 
+    user: guest
+    state: absent
+
+- name: Increase RabbitMQ open file limit
+  pam_limits:
+    domain: '*'
+    limit_type: soft
+    limit_item: nofile
+    value: 100000
+    use_max: yes
+  notify:
+    - restart rabbitmq
